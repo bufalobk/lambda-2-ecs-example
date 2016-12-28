@@ -1,0 +1,91 @@
+import boto3
+import json
+import time
+import os
+
+def lambda_handler(event, context):
+    
+    dedicated_ecs = os.getenv('DEDICATED_ECS_INSTANCE', 'False')
+    print dedicated_ecs
+    
+    if dedicated_ecs == 'True':
+        launch_ecs_instance()
+
+    print 'Starting lambda...'
+    ecs = boto3.client('ecs')
+    response = ecs.run_task(
+        cluster='AnyCluster',
+        taskDefinition='Lambda2ECSExample',
+        overrides={
+            'containerOverrides': [
+                {
+                    'name': 'Lambda2ECSExample',
+                    'environment': [
+                        {
+                            'name': 'LAMBDA_INPUT',
+                            'value': json.dumps(event)
+                        },
+                        {
+                            'name': 'DEDICATED_ECS_INSTANCE',
+                            'value': dedicated_ecs
+                        },
+                    ]
+                },
+            ]
+        },
+        count=1
+    )
+
+    return "response={}".format(response)
+    
+def launch_ecs_instance():
+    #  Amazon ECS optimized ami
+    ami_id = '<Regional AMI Id>'
+
+    # Add instance to ECS cluster
+    userdata = """#!/bin/bash
+echo ECS_CLUSTER=AnyCluster >> /etc/ecs/ecs.config
+"""
+
+    sess = boto3.session.Session();
+    
+    conn_args = {
+        'region_name': sess.region_name
+    }
+    
+    instance_profile = {
+        'Arn': 'arn:aws:iam::<your AWS Account Id>:instance-profile/ecsInstanceRole'
+    }
+
+    ec2_res = boto3.resource('ec2', **conn_args)
+
+    new_instance = ec2_res.create_instances(
+        ImageId=ami_id,
+        MinCount=1,
+        MaxCount=1,
+        UserData=userdata,
+        InstanceType='t2.micro',
+        SubnetId='<subnet id>',
+        IamInstanceProfile = instance_profile
+        )
+
+    print new_instance[0].id
+
+    instance = ec2_res.Instance(new_instance[0].id)
+
+    instance.wait_until_running()
+
+    ecs = boto3.client('ecs')
+    
+    print 'Waiting for ECS instance...'
+    
+    while True :
+        ecs_instances = ecs.list_container_instances(
+            cluster='AnyCluster',
+            maxResults=1
+        )
+
+        if len(ecs_instances.get('containerInstanceArns')) > 0 :
+            break
+        
+        time.sleep(5)
