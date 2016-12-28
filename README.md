@@ -154,7 +154,7 @@ docker push <your AWS accountId>.dkr.ecr.us-east-2.amazonaws.com/lambda2ecsexamp
 ![](img/Container.PNG)
 
 #### Update task definition
-- Select newly created IAM role for the task.
+- Select newly created IAM role, e.g., ECSLambdaExecutionRole, for the task.
 
 ![](img/TaskDefinition.PNG)
 
