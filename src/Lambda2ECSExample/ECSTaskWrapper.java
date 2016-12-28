@@ -1,10 +1,5 @@
 package Lambda2ECSExample;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
-import com.amazonaws.util.EC2MetadataUtils;
-
 /**
  * Sample wrapper for AWS Lambda function in Java.
  * 
@@ -27,15 +22,5 @@ public class ECSTaskWrapper {
 			e.printStackTrace();
 		}
 
-		boolean isDedicatedInstance = Boolean.parseBoolean(System.getenv("DEDICATED_ECS_INSTANCE"));
-
-		if (isDedicatedInstance) {
-			System.out.println("Terminating EC2 instance...");
-			AmazonEC2Client ec2Client = new AmazonEC2Client(new DefaultAWSCredentialsProviderChain().getCredentials());
-			ec2Client.setRegion(com.amazonaws.regions.Regions.getCurrentRegion());
-			TerminateInstancesRequest terminateRq = new TerminateInstancesRequest();
-			terminateRq.withInstanceIds(EC2MetadataUtils.getInstanceId());
-			ec2Client.terminateInstances(terminateRq);
-		}
 	}
 }

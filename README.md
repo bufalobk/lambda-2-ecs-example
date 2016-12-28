@@ -61,8 +61,6 @@ For example:
     }
 ```
 
-The complete code snippets that may terminate ECS instance once the ECS task is completed could be found here: [ECSTaskWrapper.java](src/Lambda2ECSExample/ECSTaskWrapper.java)
-
 ### Build java application deployment package
 1. Use any method to create a runnable .jar file for the lambda function and its wrapper.
 	- [Packaging Programs in JAR Files](http://docs.oracle.com/javase/tutorial/deployment/jar/)
@@ -102,6 +100,9 @@ Note: The runnable .jar file should include all the necessary libraries.
     # Define default command.
     CMD ["java", "-jar", "Lambda2ECSExample.jar"]
 ```
+
+- The complete Dockerfile that may terminate ECS instance once the ECS task is completed could be found here: [Dockerfile](Refs/Dockerfile)
+
 
 2.Build Docker container image and push to your ECR repository (or Docker hub): 
 
