@@ -72,7 +72,7 @@ The complete code snippets that may terminate ECS instance once the ECS task is 
 Note: The runnable .jar file should include all the necessary libraries.
 
 ### Build docker image and push to the repository 
-1. Create a [Dockerfile](refs/Dockerfile)
+1. Create a [Dockerfile](Refs/Dockerfile)
  in the same folder with the runnable .jar file
 (Assume that, the newly created .jar file is 'Lambda2ECSExample.jar').
    
@@ -221,7 +221,7 @@ docker push <your AWS accountId>.dkr.ecr.us-east-2.amazonaws.com/lambda2ecsexamp
 - You may select any existing ECS cluster for the task (if any).
 - Alternatively, you may create an empty cluster for the new ECS task. In order to launch an on-demand ECS instance and free up the ECS instance as soon as the task is completed, just add environment variable 'DEDICATED_ECS_INSTANCE' and set it to 'True' (case sensitive) to the Lambda function. 
 ![](img/LambdaEnv.PNG)
-- The complete code snippets that may launch on-demand ECS instance could be found here: [LambdaFunction](refs/LambdaFunction)
+- The complete code snippets that may launch on-demand ECS instance could be found here: [LambdaFunction](Refs/LambdaFunction)
 
 ## Updating your Lambda trigger(s)
 - Now the last step is updating your current event source(s) that triggers your (old) Lambda function to trigger the new Lambda function instead.
