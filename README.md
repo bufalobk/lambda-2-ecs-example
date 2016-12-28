@@ -139,7 +139,7 @@ docker push <your AWS accountId>.dkr.ecr.us-east-2.amazonaws.com/lambda2ecsexamp
 ![](img/ECSTaskRole.png)
 
 - Attach or add necessary permissions for your ECS task.
-- If ECS instance is launched (and then terminated) on on-demand basic, you need to attach policy that allow Lambda to launch EC2 instance(s).
+- If ECS instance is launched (and then terminated) on on-demand basic, you need to attach policy that allow ECS task(s) to terminate EC2 instance(s).
 
 ### Create ECS task definition
 
@@ -168,7 +168,7 @@ docker push <your AWS accountId>.dkr.ecr.us-east-2.amazonaws.com/lambda2ecsexamp
 
 #### Attach necessary policy to Lambda function's IAM role.
 - In addition to basic execution role of a Lambda function, it is needed to attach permission  policy to allow new Lambda function to call AWS ECS.
-- If ECS instance is launched (and then terminated) on on-demand basic, you need to attach policy that allow ECS task(s) to terminate EC2 instance(s).
+- If ECS instance is launched (and then terminated) on on-demand basic, you need to attach policy that allow Lambda to launch EC2 instance(s).
 
 ![](img/LambdaRolePermission.png)
 
