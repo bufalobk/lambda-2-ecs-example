@@ -244,4 +244,5 @@ docker push <your AWS accountId>.dkr.ecr.us-east-2.amazonaws.com/lambda2ecsexamp
 [http://docs.aws.amazon.com/AmazonECS/latest/developerguide/docker-basics.html](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/docker-basics.html)
 
 ### Lambda ECS Worker Pattern
-[https://github.com/awslabs/lambda-ecs-worker-pattern](https://github.com/awslabs/lambda-ecs-worker-pattern)
+[Better Together: Amazon ECS and AWS Lambda](https://aws.amazon.com/blogs/compute/better-together-amazon-ecs-and-aws-lambda/)
+
