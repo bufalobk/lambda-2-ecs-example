@@ -4,7 +4,7 @@ Your service, powered by a couple of lambda functions, was launched successfully
 
 Re-architecturing application stack is unacceptable due to the time constraint. Your service needs to be mitigated/fixed as soon as possible.
 
-**Solution:** Migrating your Lambda function to run in a Docker container managed by ECS. This method allows you to use your existing Lambda functions so you don’t need to code anything over again or re-architecturing application stack. Your new ECS task will still accept trigger event data as if it is working as a Lambda function. The whole migration process could be completed in less than 30 minutes (or 1 hour).
+**Solution:** Migrating your Lambda function to run in a Docker container managed by ECS. This method allows you to use your existing Lambda functions so you don’t need to code anything over again or re-architecturing application stack via different triggering mechanisms. Your new ECS task will still accept trigger event data as if it is working as a Lambda function. You may also be able to configure ECS instance to be launched on on-demand fashion, i.e., ECS instance is launched on trigger event and terminated as soon as ECS task is completed. The whole migration process could be completed in less than 30 minutes (or 1 hour).
 
 **General steps:**
 
@@ -23,12 +23,13 @@ Re-architecturing application stack is unacceptable due to the time constraint. 
 
 # AWSLambda2ECSExample
 
-This is an implementation which converts a over-limit AWS lambda **JAVA** function to an ECS task while maintaining the invocation of the original AWS lambda function and preserving event data.
+This is an implementation which converts a over-limit AWS lambda **JAVA** function to an ECS task while maintaining the invocation of the original AWS lambda function and preserving event data. 
+
+In this example, the original lambda function which pushes notifications to an SNS topic will be converted to an ECS task using a wrapper.   
 
 The new Lambda function will call ECS service API to run an ECS task that is equivalent to the original Lambda function. The event data of the Lambda function is passed to ECS task(s) as an environment variable as a JSON string.
 
-How about ECS instance that hosts the new ECS task? Would it incur any charge? The answer is yes.
-If the event that triggers your lambda function happens sporadically, You may configure launching the ECS instance only when the Lambda function is triggered and terminating it as soon as the ESC task is completed.  
+If the event that triggers your lambda function happens sporadically, e.g., once per day, you may configure launching the ECS instance only when the Lambda function is triggered and terminating it as soon as the ESC task is completed. 
 
 ## Configuration
 
@@ -232,7 +233,7 @@ docker push <your AWS accountId>.dkr.ecr.us-east-2.amazonaws.com/lambda2ecsexamp
  
 ## Automation
 
-- Most of these steps above can be done quickly via CloudFormation template(s) which will be added later.
+- CloudFormation template(s) which will be added later.
 
 ## References
 ### Lambda
