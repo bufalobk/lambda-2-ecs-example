@@ -77,21 +77,33 @@ Note: The runnable .jar file should include all the necessary libraries.
    
 ```bash
     
+    # Pull base image.
     FROM ubuntu:14.04
-     
+    
     # Install Java.
     RUN \
-       sed -i 's/# \(.*multiverse$\)/\1/g' /etc/apt/sources.list && \ 
-       apt-get update && \
-       apt-get -y upgrade && \
-       apt-get install -y build-essential && \
-       apt-get install -y software-properties-common && \
-       apt-get install -y byobu curl git htop man unzip vim wget && \
-       apt-get install -y openjdk-7-jre && \
-       rm -rf /var/lib/apt/lists/*
+      sed -i 's/# \(.*multiverse$\)/\1/g' /etc/apt/sources.list && \
+      apt-get update && \
+      apt-get -y upgrade && \
+      apt-get install -y build-essential && \
+      apt-get install -y software-properties-common && \
+      apt-get install -y byobu curl git htop man unzip vim wget && \
+      apt-get install -y openjdk-7-jre && \
+      apt-get install -y python python-pip && \
+      rm -rf /var/lib/apt/lists/*
     
+    RUN \
+      pip install awscli
+      
     # Define working directory.
     WORKDIR /data
+    
+    RUN \
+      echo "#!/bin/bash\nif [ \"\$DEDICATE_ECS_INSTANCE\" == \"True\" ]; then aws ec2 terminate-instances --instance-ids \$(curl http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceId |awk -F\\\" '{print \$4}') --region \$(curl http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\\\" '{print \$4}'); fi" \
+      >> terminateme.sh 
+    
+    RUN \
+      chmod +x terminateme.sh 
     
     ADD Lambda2ECSExample.jar Lambda2ECSExample.jar
     
@@ -100,10 +112,9 @@ Note: The runnable .jar file should include all the necessary libraries.
     
     # Define default command.
     CMD ["java", "-jar", "Lambda2ECSExample.jar"]
+    
+    CMD ["./terminateme.sh"]
 ```
-
-- The complete Dockerfile that may terminate ECS instance once the ECS task is completed could be found here: [Dockerfile](Refs/Dockerfile)
-
 
 2.Build Docker container image and push to your ECR repository (or Docker hub): 
 
@@ -189,32 +200,97 @@ docker push <your AWS accountId>.dkr.ecr.us-east-2.amazonaws.com/lambda2ecsexamp
 ```python
     
     import boto3
-    import json
-    
-    def lambda_handler(event, context):
-        
-        ecs = boto3.client('ecs')
-        
-        response = ecs.run_task(
-            cluster='AnyCluster',
-            taskDefinition='Lambda2ECSExample',
-            overrides={
-                'containerOverrides': [
-                    {
-                        'name': 'Lambda2ECSExample',
-                        'environment': [
-                            {
-                                'name': 'LAMBDA_IMPUT',
-                                'value': json.dumps(event)
-                            },
-                        ]
-                    },
-                ]
-            },
-            count=1
-        )
+	import json
+	import time
+	import os
 
-        return "response={}".format(response)
+	def lambda_handler(event, context):
+		
+		dedicated_ecs = os.getenv('DEDICATED_ECS_INSTANCE', 'False')
+		print dedicated_ecs
+		
+		if dedicated_ecs == 'True':
+			launch_ecs_instance()
+
+		print 'Starting lambda...'
+		ecs = boto3.client('ecs')
+		response = ecs.run_task(
+			cluster='AnyCluster',
+			taskDefinition='Lambda2ECSExample',
+			overrides={
+				'containerOverrides': [
+					{
+						'name': 'Lambda2ECSExample',
+						'environment': [
+							{
+								'name': 'LAMBDA_INPUT',
+								'value': json.dumps(event)
+							},
+							{
+								'name': 'DEDICATED_ECS_INSTANCE',
+								'value': dedicated_ecs
+							},
+						]
+					},
+				]
+			},
+			count=1
+		)
+
+		return "response={}".format(response)
+		
+	def launch_ecs_instance():
+		#  Amazon ECS optimized ami
+		ami_id = '<Regional AMI Id>'
+
+		# Add instance to ECS cluster
+		userdata = """#!/bin/bash
+	echo ECS_CLUSTER=AnyCluster >> /etc/ecs/ecs.config
+	"""
+
+		sess = boto3.session.Session();
+		
+		conn_args = {
+			'region_name': sess.region_name
+		}
+		
+		instance_profile = {
+			'Arn': 'arn:aws:iam::<your AWS Account Id>:instance-profile/ecsInstanceRole'
+		}
+
+		ec2_res = boto3.resource('ec2', **conn_args)
+
+		new_instance = ec2_res.create_instances(
+			ImageId=ami_id,
+			MinCount=1,
+			MaxCount=1,
+			UserData=userdata,
+			InstanceType='t2.micro',
+			SubnetId='<subnet id>',
+			IamInstanceProfile = instance_profile
+			)
+
+		print new_instance[0].id
+
+		instance = ec2_res.Instance(new_instance[0].id)
+
+		instance.wait_until_running()
+
+		ecs = boto3.client('ecs')
+		
+		print 'Waiting for ECS instance...'
+		
+		while True :
+			ecs_instances = ecs.list_container_instances(
+				cluster='AnyCluster',
+				maxResults=1
+			)
+
+			if len(ecs_instances.get('containerInstanceArns')) > 0 :
+				break
+			
+			time.sleep(5)
+
 
 ```
 
@@ -224,7 +300,7 @@ docker push <your AWS accountId>.dkr.ecr.us-east-2.amazonaws.com/lambda2ecsexamp
 - You may select any existing ECS cluster for the task (if any).
 - Alternatively, you may create an empty cluster for the new ECS task. In order to launch an on-demand ECS instance and free up the ECS instance as soon as the task is completed, just add environment variable 'DEDICATED_ECS_INSTANCE' and set it to 'True' (case sensitive) to the Lambda function. 
 ![](img/LambdaEnv.PNG)
-- The complete code snippets that may launch on-demand ECS instance could be found here: [LambdaFunction](Refs/LambdaFunction)
+- The complete code snippets could be found here: [LambdaFunction](Refs/LambdaFunction)
 
 ## Updating your Lambda trigger(s)
 - Now the last step is updating your current event source(s) that triggers your (old) Lambda function to trigger the new Lambda function instead.
